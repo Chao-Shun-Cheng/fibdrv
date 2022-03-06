@@ -39,6 +39,22 @@ static long long fib_sequence(long long k)
     return f[k];
 }
 
+static long long fib_sequence_double(long long k)
+{
+    long long a = 0, b = 1, t1, t2;
+    int pos = 32 - __builtin_clz(k);
+    for (pos = pos - 1; pos >= 0; pos--) {
+        t1 = a * (2 * b - a);
+        t2 = b * b + a * a;
+        a = t1, b = t2;
+        if ((1 << pos) & k) {
+            t1 = a + b;
+            a = b, b = t1;
+        }
+    }
+    return a;
+}
+
 static int fib_open(struct inode *inode, struct file *file)
 {
     if (!mutex_trylock(&fib_mutex)) {
@@ -60,7 +76,10 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    return (ssize_t) fib_sequence(*offset);
+    if (size)
+        return (ssize_t) fib_sequence(*offset);
+    else
+        return (ssize_t) fib_sequence_double(*offset);
 }
 
 /* write operation is skipped */
